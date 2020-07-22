@@ -87,7 +87,10 @@ class CPU:
             0b10000010 : "LDI",
             0b10100010 : "MUL",
             0b01000101 : "PUSH",
-            0b01000110 : "POP"
+            0b01000110 : "POP",
+            0b01010000 : "CALL",
+            0b01010100 : "JMP",
+            0b00010001 : "RET"
         }
         
 
@@ -138,6 +141,7 @@ class CPU:
         
     def HLT(self):
         return False
+        
     
     def alu(self, op, reg_a= None, reg_b = None):
         """ALU operations."""
@@ -180,7 +184,7 @@ class CPU:
     def run(self):
         """Run the CPU."""
         sp = 7#stack pointer
-        self.reg[sp] = 0xf4#start one above f3 then decrement
+        self.reg[sp] = 0xf4 #start one above f3 then decrement
         running = True
         count = 1
     
@@ -243,3 +247,22 @@ class CPU:
                 self.pc += 3
             else:
                 self.pc += 2
+                
+    
+            if self.branch_table[ir] == "CALL":
+                return_addr = self.pc + 2
+                #push on the stack
+                self.reg[sp] -=1
+                self.ram[self.reg[sp]] = return_addr
+                    
+                #get the address to call
+                reg_num = self.ram[self.pc + 1]
+                subroutine_addr = self.reg[reg_num]
+                    
+                #call it
+                self.pc = subroutine_addr
+                    
+            else:
+                self.branch_table[ir] == "RET"
+                pass
+                    
