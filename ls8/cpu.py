@@ -179,7 +179,8 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-       
+        sp = 7#stack pointer
+        self.reg[sp] = 0xf4#start one above f3 then decrement
         running = True
         count = 1
     
@@ -204,35 +205,30 @@ class CPU:
                     self.PRN(operand_a)
                 
                 elif self.branch_table[ir] == "PUSH":
-                    sp = 7
-                    register[sp] = 0xff
-                    register[sp] -= 1
+                    #decrement stack pointer
+                    self.reg[sp] -= 1
     
-                    register[sp] &= 0xff#keeps r7 in the 
+                    self.reg[sp] &= 0xff#keeps r7 in the range 00-ff
     
                     #get register number
-                    reg_num = memory[pc+1]
-                    value = register[reg_num]
+                    reg_num = self.ram[self.pc+1]
+                    value = self.reg[reg_num]
     
                     #store in memory
-                    address_to_push_to = register[sp]
-                    memory[address_to_push_to] = value
-    
-                    pc += 2
-                
+                    address_to_push_to = self.reg[sp]
+                    self.ram[address_to_push_to] = value
+     
                 elif self.branch_table[ir] == "POP":
                     #get value from RAM
-                    address_to_pop_from = register[sp]
-                    value = memory[address_to_pop_from]
+                    address_to_pop_from = self.reg[sp]
+                    value = self.ram[address_to_pop_from]
         
                     #store in the given registery
-                    reg_num = memory[pc + 1]
-                    register[reg_num] = value
+                    reg_num = self.ram[self.pc + 1]
+                    self.reg[reg_num] = value
         
                     #increment SP
-                    register[sp] +=1
-        
-                    pc +=2
+                    self.reg[sp] +=1
                 
                 else: 
                     op = self.branch_table[ir]
