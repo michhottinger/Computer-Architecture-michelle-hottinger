@@ -134,7 +134,6 @@ class CPU:
     def LDI(self, reg, value):
         self.reg[reg] = value
         
-    
     def HLT(self):
         return False
     
@@ -147,11 +146,11 @@ class CPU:
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
         
-#         elif op == "LDI":
-#             self.LDI(reg_a, reg_b)
+        elif op == "LDI":
+            self.LDI(reg_a, reg_b)
             
-#         elif op == "PRN":
-#             self.PRN(reg_a)
+        elif op == "PRN":
+            self.PRN(reg_a)
         
         else:
             raise Exception("Unsupported ALU operation")
@@ -185,7 +184,7 @@ class CPU:
         while running:
             ir = self.ram_read(self.pc) # Instruction Register, contains a copy of the currently executing instruction
             if ir in self.branch_table:
-                print(self.branch_table[ir])
+                self.branch_table[ir]
             if ir in self.branch_table and self.branch_table[ir] == "HLT":
                 running = self.HLT()
                
@@ -194,23 +193,23 @@ class CPU:
             operand_b = self.ram_read(self.pc+2)
             
             if ir in self.branch_table and not self.branch_table[ir] == "HLT":
+                
                 if self.branch_table[ir] == "LDI":
                     self.LDI(operand_a, operand_b)
-                elif self.branch_table[ir] == "PRN":
                 
+                elif self.branch_table[ir] == "PRN":
                     self.PRN(operand_a)
-                else:
-                    
+                
+                else: 
                     op = self.branch_table[ir]
-                    print(op)
                     self.alu(op, operand_a, operand_b)
-            
+                
             
             
             count +=1
                
             #print(self.alu(ir, operand_a, operand_b))
             if (ir & (1<< 7)) >> 7 ==1:
-                self.pc += 2
+                self.pc += 3
             else:
-                self.pc += 1
+                self.pc += 2
