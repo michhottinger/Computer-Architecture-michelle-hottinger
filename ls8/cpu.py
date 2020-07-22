@@ -84,7 +84,8 @@ class CPU:
         self.branch_table = {
             0b01000111 : "PRN",
             0b00000001 : "HLT",
-            0b10000010 : "LDI"
+            0b10000010 : "LDI",
+            0b10100010 : "MUL"
         }
         
 
@@ -95,25 +96,25 @@ class CPU:
 
         # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-#arg is taken by load.
-#         program = []
-#         with open (sys.argv[1]) as f:
-#             for line in f:
-#                 try: 
-#                     line = line.split("#", 1)[0]
-#                     line = int(line, 2)
-#                     program.append(line)
-#                 except ValueError:
-#                     pass
+#         program = [
+#             # From print8.ls8
+#             0b10000010, # LDI R0,8
+#             0b00000000,
+#             0b00001000,
+#             0b01000111, # PRN R0
+#             0b00000000,
+#             0b00000001, # HLT
+#         ]
+
+        program = []
+        with open (sys.argv[1]) as f:
+            for line in f:
+                try: 
+                    line = line.split("#", 1)[0]
+                    line = int(line, 2)
+                    program.append(line)
+                except ValueError:
+                    pass
                 
                 
         for instruction in program:
@@ -139,16 +140,18 @@ class CPU:
     
     def alu(self, op, reg_a= None, reg_b = None):
         """ALU operations."""
-        print("ALU", op, reg_a, reg_b)
+        
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
         
-        elif op == "LDI":
-            self.LDI(reg_a, reg_b)
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+        
+#         elif op == "LDI":
+#             self.LDI(reg_a, reg_b)
             
-        elif op == "PRN":
-            self.PRN(reg_a)
+#         elif op == "PRN":
+#             self.PRN(reg_a)
         
         else:
             raise Exception("Unsupported ALU operation")
@@ -181,6 +184,8 @@ class CPU:
     
         while running:
             ir = self.ram_read(self.pc) # Instruction Register, contains a copy of the currently executing instruction
+            if ir in self.branch_table:
+                print(self.branch_table[ir])
             if ir in self.branch_table and self.branch_table[ir] == "HLT":
                 running = self.HLT()
                
@@ -189,12 +194,19 @@ class CPU:
             operand_b = self.ram_read(self.pc+2)
             
             if ir in self.branch_table and not self.branch_table[ir] == "HLT":
+                if self.branch_table[ir] == "LDI":
+                    self.LDI(operand_a, operand_b)
+                elif self.branch_table[ir] == "PRN":
                 
-                op = self.branch_table[ir]
-                self.alu(op, operand_a, operand_b)
+                    self.PRN(operand_a)
+                else:
+                    
+                    op = self.branch_table[ir]
+                    print(op)
+                    self.alu(op, operand_a, operand_b)
             
             
-            print(count)
+            
             count +=1
                
             #print(self.alu(ir, operand_a, operand_b))
