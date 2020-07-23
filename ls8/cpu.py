@@ -151,13 +151,7 @@ class CPU:
         
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
-        
-        elif op == "LDI":
-            self.LDI(reg_a, reg_b)
             
-        elif op == "PRN":
-            self.PRN(reg_a)
-        
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -204,9 +198,17 @@ class CPU:
                 
                 if self.branch_table[ir] == "LDI":
                     self.LDI(operand_a, operand_b)
+                    if (ir & (1<< 7)) >> 7 ==1:
+                        self.pc += 3
+                    else:
+                        self.pc += 2
                 
                 elif self.branch_table[ir] == "PRN":
                     self.PRN(operand_a)
+                    if (ir & (1<< 7)) >> 7 ==1:
+                        self.pc += 3
+                    else:
+                        self.pc += 2
                 
                 elif self.branch_table[ir] == "PUSH":
                     #decrement stack pointer
@@ -221,6 +223,10 @@ class CPU:
                     #store in memory
                     address_to_push_to = self.reg[sp]
                     self.ram[address_to_push_to] = value
+                    if (ir & (1<< 7)) >> 7 ==1:
+                        self.pc += 3
+                    else:
+                        self.pc += 2
      
                 elif self.branch_table[ir] == "POP":
                     #get value from RAM
@@ -233,36 +239,42 @@ class CPU:
         
                     #increment SP
                     self.reg[sp] +=1
+                    #print(self.reg[sp])
+                    if (ir & (1<< 7)) >> 7 ==1:
+                        self.pc += 3
+                    else:
+                        self.pc += 2
                 
+                elif self.branch_table[ir] == "CALL":
+                    return_addr = self.pc + 2 #where we RET to
+                    #push on the stack
+                    self.reg[sp] -=1
+                    
+                    self.ram[self.reg[sp]] = return_addr
+                    
+                    #get the address to call
+                    reg_num = self.ram[self.pc + 1]
+                    
+                    subroutine_addr = self.reg[reg_num]
+                    
+                    #call it
+                    self.pc = subroutine_addr
+                    
+                elif self.branch_table[ir] == "RET":
+                     return_addr = self.pc - 1
+                    
                 else: 
                     op = self.branch_table[ir]
                     self.alu(op, operand_a, operand_b)
                 
-            
-            
             count +=1
                
-            #print(self.alu(ir, operand_a, operand_b))
-            if (ir & (1<< 7)) >> 7 ==1:
-                self.pc += 3
-            else:
-                self.pc += 2
+            
+#             if (ir & (1<< 7)) >> 7 ==1:
+#                 self.pc += 3
+#             else:
+#                 self.pc += 2
                 
     
-            if self.branch_table[ir] == "CALL":
-                return_addr = self.pc + 2
-                #push on the stack
-                self.reg[sp] -=1
-                self.ram[self.reg[sp]] = return_addr
-                    
-                #get the address to call
-                reg_num = self.ram[self.pc + 1]
-                subroutine_addr = self.reg[reg_num]
-                    
-                #call it
-                self.pc = subroutine_addr
-                    
-            else:
-                self.branch_table[ir] == "RET"
-                pass
+            
                     
