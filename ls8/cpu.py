@@ -90,7 +90,11 @@ class CPU:
             0b01000110 : "POP",
             0b01010000 : "CALL",
             0b01010100 : "JMP",
-            0b00010001 : "RET"
+            0b00010001 : "RET",
+            0b10100000 : "ADD",
+            0b01010110 : "JNE",
+            0b10100111 : "CMP",
+            0b01010101 : "JEQ"
         }
         
 
@@ -142,6 +146,11 @@ class CPU:
     def HLT(self):
         return False
         
+    def JEQ(self, reg_a=None, reg_b=None):
+        if self.flags['E'] == 1:
+            self.pc == self.reg_a
+        else:
+            self.pc += 2
     
     def alu(self, op, reg_a= None, reg_b = None):
         """ALU operations."""
@@ -184,31 +193,30 @@ class CPU:
     
         while running:
             ir = self.ram_read(self.pc) # Instruction Register, contains a copy of the currently executing instruction
+#             print('---------------------')
+#             print(self.pc, ir, self.branch_table.get(ir))
+#             self.trace()
+#             print('---------------------')
             if ir in self.branch_table:
                 self.branch_table[ir]
             
             if ir in self.branch_table and self.branch_table[ir] == "HLT":
                 running = self.HLT()
+                print("halted here")
                
           
-            operand_a = self.ram_read(self.pc+1)
-            operand_b = self.ram_read(self.pc+2)
+            operand_a = self.ram_read(self.pc + 1)
+            operand_b = self.ram_read(self.pc + 2)
             
             if ir in self.branch_table and not self.branch_table[ir] == "HLT":
                 
                 if self.branch_table[ir] == "LDI":
                     self.LDI(operand_a, operand_b)
-                    if (ir & (1<< 7)) >> 7 ==1:
-                        self.pc += 3
-                    else:
-                        self.pc += 2
+                    self.pc += 3
                 
                 elif self.branch_table[ir] == "PRN":
                     self.PRN(operand_a)
-                    if (ir & (1<< 7)) >> 7 ==1:
-                        self.pc += 3
-                    else:
-                        self.pc += 2
+                    self.pc += 2
                 
                 elif self.branch_table[ir] == "PUSH":
                     #decrement stack pointer
@@ -247,33 +255,44 @@ class CPU:
                 
                 elif self.branch_table[ir] == "CALL":
                     return_addr = self.pc + 2 #where we RET to
+                    
                     #push on the stack
                     self.reg[sp] -=1
+                    address_to_push_to = self.reg[sp]
+                    self.ram[address_to_push_to] = return_addr
                     
-                    self.ram[self.reg[sp]] = return_addr
-                    
-                    #get the address to call
+                    #set the PC to the subroutine address
                     reg_num = self.ram[self.pc + 1]
-                    
                     subroutine_addr = self.reg[reg_num]
-                    
-                    #call it
+                   
                     self.pc = subroutine_addr
                     
+                    #print(self.pc) #THIS is getting stopped at 24, HLT
+                    
                 elif self.branch_table[ir] == "RET":
-                     return_addr = self.pc - 1
+                     #get reutrn address from top of stack
+                    address_to_pop_from = self.reg[sp]
+                    return_addr = self.ram[address_to_pop_from]
+                    self.reg[sp] += 1
+
+                    #set pc to return addr
+                    self.pc = return_addr
+                               
+                elif self.branch_table[ir] == "JMP":
+                    
+                    
                     
                 else: 
                     op = self.branch_table[ir]
                     self.alu(op, operand_a, operand_b)
+                    if (ir & (1<< 7)) >> 7 ==1:
+                        self.pc += 3
+                    else:
+                        self.pc += 2
                 
             count +=1
                
-            
-#             if (ir & (1<< 7)) >> 7 ==1:
-#                 self.pc += 3
-#             else:
-#                 self.pc += 2
+        
                 
     
             

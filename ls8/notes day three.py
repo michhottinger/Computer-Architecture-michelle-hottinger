@@ -74,5 +74,92 @@ while running:
 
     else:
         print(f"Unknown instruction {inst}")
-        
+ 
+ 
+Day 4
+
+3save register[subroutine addr]
+2
+6[subroutine addr]
+7call r2
+2halt
+subroutine:
+1print 
+1print
+1print
+8ret
+
+
+
+elif inst == CALL:
+#get address of the next instruction
+return_addr = pc + 2
+
+#push that on the stack
+register[sp] -= 1
+address_to_push_to = register[sp]
+memory[address_to_push_to] = return_addr]
+
+#set the PC to the subroutine addres
+reg_num = memory[pc + 1]
+subroutine_addr = register[reg_num]
+
+pc = subroutine_addr
+
+elif inst == RET
+
+#get reutrn address from top of stack
+
+address_to_pop_from = self.reg[sp]
+return_addr = self.ram[address_to_pop_from]
+self.reg[sp] += 1
+
+#set pc to return addr
+self.pc = return_addr
+
+MORE NOTES:
+
+Rules:
+when you call a function, push the return address onto the stack
+when you return, pop the reutrn address off the stack (and store it in the pc)
+
+Stack:
+699: a = ?   |mains stack frame
+698: b = ?  
+697: [addr1]
+
+696: x = 2
+695: y = 7
+694: z = ?
+693: [addr2]
+
+
+def mult2(x, y):
+    z = x*y
+    return z
+
+
+def main():
+    a = 2<---call it and pc moves here and sets a to 2
+    
+    #we must return to the middle of expression at = sign
+    
+    #addr2
+    #v
+    b = mult2(9a, 7)<---we can't assign b until we compute mult2
+    print(b)#14
+    return
+    
+main()<---pc is here at first
+
+#[addr1]
+#y
+
+print("Done")
+
+Interrupts
+
+
+
+
 """
