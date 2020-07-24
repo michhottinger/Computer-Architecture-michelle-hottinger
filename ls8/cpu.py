@@ -1,30 +1,5 @@
 """CPU functionality."""
-"""
-CPU
-    Executing instructions
-    Gets them out of RAM
-    Registers (like variables)
-        Fixed names  R0-R7
-        Fixed number of them -- 8 of them
-        Fixed size -- 8 bits
 
-Memory (RAM)
-    A big array of bytes
-    Each memory slot has an index, and a value stored at that index
-    That index into memory AKA:
-        pointer
-        location
-        address
-"""
-"""
-- [ ] Inventory what is here
-- [ ] Implement the `CPU` constructor
-- [ ] Add RAM functions `ram_read()` and `ram_write()`
-- [ ] Implement the core of `run()`
-- [ ] Implement the `HLT` instruction handler
-- [ ] Add the `LDI` instruction
-- [ ] Add the `PRN` instruction
-"""
 ## ALU ops
 ADD = 0b10100000
 SUB = 0b10100001
@@ -65,22 +40,17 @@ POP  = 0b01000110
 PRN  = 0b01000111
 PRA  = 0b01001000
 
-
-
-import sys
-
-"""CPU functionality."""
-
 import sys
 
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
-        """Construct a new CPU."""
+       
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc =0
+        self.flags = {}
         self.branch_table = {
             0b01000111 : "PRN",
             0b00000001 : "HLT",
@@ -102,18 +72,6 @@ class CPU:
         """Load a program into memory."""
 
         address = 0
-
-        # For now, we've just hardcoded a program:
-
-#         program = [
-#             # From print8.ls8
-#             0b10000010, # LDI R0,8
-#             0b00000000,
-#             0b00001000,
-#             0b01000111, # PRN R0
-#             0b00000000,
-#             0b00000001, # HLT
-#         ]
 
         program = []
         with open (sys.argv[1]) as f:
@@ -146,20 +104,49 @@ class CPU:
     def HLT(self):
         return False
         
-    def JEQ(self, reg_a=None, reg_b=None):
-        if self.flags['E'] == 1:
-            self.pc == self.reg_a
-        else:
-            self.pc += 2
-    
-    def alu(self, op, reg_a= None, reg_b = None):
-        """ALU operations."""
+#     def JEQ(self, reg):
+#         if self.flags['E'] == 1:
+#             self.pc == self.reg[reg]
+#         else:
+#             self.pc += 2
+            
+#     def JNE(self, reg):
+#         if self.flags['E'] == 0:
+#             self.pc == self.reg[reg]
+#         else:
+#             self.pc +=2
+            
+#     def JMP(self, reg):
+#         self.pc = self.reg[reg]
         
+    
+    def alu(self, op, reg_a=None, reg_b=None):
+        """ALU operations."""
+        a = self.reg[reg_a]
+        b = self.reg[reg_b]
+
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
+            a += b
         
         elif op == "MUL":
-            self.reg[reg_a] *= self.reg[reg_b]
+            a *= b
+            
+        elif op == "CMP":
+            
+            if a == b:
+                self.flags['E'] = 1
+            else:
+                self.flags['E'] = 0
+            
+            if a < b:
+                self.flags['L'] = 1
+            else:
+                self.flags['L'] = 0
+            
+            if a > b:
+                self.flags['G'] = 1
+            else:
+                self.flags['G'] = 0
             
         else:
             raise Exception("Unsupported ALU operation")
@@ -191,6 +178,8 @@ class CPU:
         running = True
         count = 1
     
+   
+        
         while running:
             ir = self.ram_read(self.pc) # Instruction Register, contains a copy of the currently executing instruction
 #             print('---------------------')
@@ -278,13 +267,26 @@ class CPU:
                     #set pc to return addr
                     self.pc = return_addr
                                
+                elif self.branch_table[ir] == "JNE":
+                    print("here")
+                    if self.flags['E'] == 0:
+                        self.pc = self.reg[operand_a]
+                    else:
+                        self.pc +=2
+                
                 elif self.branch_table[ir] == "JMP":
-                    
-                    
+                    self.pc = self.reg[operand_a]
+                
+                elif self.branch_table[ir] == "JEQ":
+                    if self.flags['E'] == 1:
+                        self.pc = self.reg[operand_a]
+                    else:
+                        self.pc += 2
                     
                 else: 
                     op = self.branch_table[ir]
                     self.alu(op, operand_a, operand_b)
+                    
                     if (ir & (1<< 7)) >> 7 ==1:
                         self.pc += 3
                     else:

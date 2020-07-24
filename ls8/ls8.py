@@ -5,7 +5,7 @@
 
 import sys
 from cpu import *
-from play import *
+#from play import *
 
 
 cpu = CPU()
@@ -17,5 +17,5 @@ cpu.run()
 
 # play = CPU2()
 
-# play.load()
+# play.load(play)
 # play.run()

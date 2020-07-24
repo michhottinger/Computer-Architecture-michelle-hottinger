@@ -1,30 +1,6 @@
-"""CPU functionality."""
-"""
-CPU
-    Executing instructions
-    Gets them out of RAM
-    Registers (like variables)
-        Fixed names  R0-R7
-        Fixed number of them -- 8 of them
-        Fixed size -- 8 bits
+#the cleanest code I found on the interwebsssssss
+#to learn how to clean code nicely
 
-Memory (RAM)
-    A big array of bytes
-    Each memory slot has an index, and a value stored at that index
-    That index into memory AKA:
-        pointer
-        location
-        address
-"""
-"""
-- [ ] Inventory what is here
-- [ ] Implement the `CPU` constructor
-- [ ] Add RAM functions `ram_read()` and `ram_write()`
-- [ ] Implement the core of `run()`
-- [ ] Implement the `HLT` instruction handler
-- [ ] Add the `LDI` instruction
-- [ ] Add the `PRN` instruction
-"""
 ## ALU ops
 ADD = 0b10100000
 SUB = 0b10100001
@@ -68,46 +44,61 @@ PRA  = 0b01001000
 
 
 import sys
+#used in the system:
+HLT = 0b00000001
+LDI = 0b10000010
+PRN = 0b01000111
+MUL = 0b10100010
+POP = 0b01000110
+RET = 0b00010001
+ADD = 0b10100000
+CMP = 0b10100111
+JMP = 0b01010100
+JNE = 0b01010110
+JEQ = 0b01010101
+
+CALL = 0b01010000
+PUSH = 0b01000101
 
 
 class CPU2:
-    """Main CPU class."""
-
     def __init__(self):
-      
+        """Construct A New CPU"""
+        # build out registers
+        self.registers = [0] * 8
+        # build out RAM
         self.ram = [0] * 256
-        self.reg = [0] * 8
-        self.pc =0
+        # set Program Counter (PC)
+        self.pc = 0
+        # set Stack Pointer (SP) index in our register, will always point to position 7 in our Registers
+        self.sp = 7
+        # Assign SP to the value of 244 in our RAM
+        self.registers[7] = 0xF4
+        # Dict to hold FL
+        self.flags = {}
+        # Construct a branch table
         self.branch_table = {}
-        self.branch_table[0b01000111] == self.PRN
-        self.branch_table[0b00000001] == self.HLT
-        self.branch_table[0b10000010] == self.LDI
-        self.branch_table[0b10100010] == self.MUL
-        self.branch_table[0b01000101] == self.PUSH
-        self.branch_table[0b01000110] == self.POP
-        self.branch_table[0b01010000] == self.CALL
-        self.branch_table[0b01010100] == self.JMP
-        self.branch_table[0b00010001] == self.RET
-        self.branch_table[0b10100000] == self.ADD
-        
-        
+        self.branch_table[JEQ] = self.jeq
+        self.branch_table[JMP] = self.jmp
+        self.branch_table[JNE] = self.jne
+        self.branch_table[CMP] = self.cmp_func
+        self.branch_table[LDI] = self.ldi
+        self.branch_table[PRN] = self.prn
+        self.branch_table[ADD] = self.add
+        self.branch_table[MUL] = self.mul
+        self.branch_table[PUSH] = self.push
+        self.branch_table[POP] = self.pop
+        self.branch_table[CALL] = self.call
+        self.branch_table[RET] = self.ret
 
-    def load(self):
+    def load(self, filename):
         """Load a program into memory."""
 
         address = 0
 
         # For now, we've just hardcoded a program:
 
-#         program = [
-#             # From print8.ls8
-#             0b10000010, # LDI R0,8
-#             0b00000000,
-#             0b00001000,
-#             0b01000111, # PRN R0
-#             0b00000000,
-#             0b00000001, # HLT
-#         ]
+        address = 0
 
         program = []
         with open (sys.argv[1]) as f:
@@ -124,84 +115,110 @@ class CPU2:
             self.ram[address] = instruction
             address += 1
 
-            #Memory Address Register_ (MAR) and the _Memory Data Register_ (MDR)
-    def ram_read(self, mar):
-        return self.ram[mar]
-
-    def ram_write(self, mar, mdr):
-        self.ram[mar] = mdr
-    
-    def PRN(self, reg):
-        print(self.reg[reg])
-    
-    def LDI(self, reg, value):
-        self.reg[reg] = value
-        
-    def HLT(self):
-        return False
-    
-    def CALL(self, sp):
-        return_addr = self.pc + 2 #where we RET to
-                    
-        #push on the stack
-        self.reg[sp] -=1
-        address_to_push_to = self.reg[sp]
-        self.ram[address_to_push_to] = return_addr
-                    
-        #set the PC to the subroutine address
-        reg_num = self.ram[self.pc + 1]
-        subroutine_addr = self.reg[reg_num]
-                   
-        self.pc = subroutine_addr
-        
-    def RET(self, sp):
-         #get reutrn address from top of stack
-        address_to_pop_from = self.reg[sp]
-        return_addr = self.ram[address_to_pop_from]
-        self.reg[sp] += 1
-
-        #set pc to return addr
-        self.pc = return_addr
-    
-    def alu(self, op, reg_a= None, reg_b = None):
+    # ALU to perform arithmatic operations and also CMP operations
+    def alu(self, op, reg_a, reg_b):
         """ALU operations."""
-        
+
+        # vars to be used for flagging
+        a = self.registers[reg_a]
+        b = self.registers[reg_b]
+
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
-        
+            self.registers[reg_a] += self.registers[reg_b]
         elif op == "MUL":
-            self.reg[reg_a] *= self.reg[reg_b]
-            
+            self.registers[reg_a] *= self.registers[reg_b]
+        elif op == "CMP":
+            if a == b:
+                self.flags['E'] = 1
+            else:
+                self.flags['E'] = 0
+            if a < b:
+                self.flags['L'] = 1
+            else:
+                self.flags['L'] = 0
+            if a > b:
+                self.flags['G'] = 1
+            else:
+                self.flags['G'] = 0
         else:
             raise Exception("Unsupported ALU operation")
 
-    def trace(self):
-        """
-        Handy function to print out the CPU state. You might want to call this
-        from run() if you need help debugging.
-        """
+    def read_ram(self, MAR):
+        return self.ram[MAR]
 
-        print(f"TRACE: %02X | %02X %02X %02X |" % (
-            self.pc,
-            #self.fl,
-            #self.ie,
-            self.ram_read(self.pc),
-            self.ram_read(self.pc + 1),
-            self.ram_read(self.pc + 2)
-        ), end='')
+    def write_ram(self, MAR, MDR):
+        self.ram[MAR] = MDR
 
-        for i in range(8):
-            print(" %02X" % self.reg[i], end='')
+    def jeq(self, a=None, b=None):
+        if self.flags['E'] == 1:
+            self.pc = self.registers[a]
+        else:
+            self.pc += 2
 
-        print()
+    def jmp(self, a=None, b=None):
+        self.pc = self.registers[a]
+
+    def jne(self, a=None, b=None):
+        if self.flags['E'] == 0:
+            self.pc = self.registers[a]
+        else:
+            self.pc += 2
+
+    def cmp_func(self, a=None, b=None):
+        self.alu("CMP", a, b)
+
+    def ldi(self, a=None, b=None):
+        self.registers[a] = b
+
+    def prn(self, a=None, b=None):
+        print(self.registers[a])
+
+    def add(self, a=None, b=None):
+        self.alu("ADD", a, b)
+
+    def mul(self, a=None, b=None):
+        self.alu("MUL", a, b)
+
+    def push(self, a=None, b=None):
+        self.registers[self.sp] -= 1
+        val = self.registers[a]
+        self.write_ram(self.registers[self.sp], val)
+
+    def pop(self, a=None):
+        val = self.read_ram(self.registers[self.sp])
+        self.registers[a] = val
+        self.registers[self.sp] += 1
+
+    def call(self, b=None):
+        val = self.pc + 2
+        self.registers[self.sp] -= 1
+        self.write_ram(self.registers[self.sp], val)
+        reg = self.read_ram(self.pc + 1)
+        addr = self.registers[reg]
+        self.pc = addr
+
+    def ret(self):
+        ret_addr = self.registers[self.sp]
+        self.pc = self.read_ram(ret_addr)
+        self.registers[self.sp] += 1
 
     def run(self):
-        """Run the CPU."""
+        """Run The CPU"""
+
+        # a dict to check for jump instructions
+        jump = [CALL, JNE, RET, JMP, JEQ]
+
         while True:
-            ir = self.ram_read(self.pc)
-            operand_a = self.ram_read(self.pc + 1)
-            operand_b = self.ram_read(self.pc + 2)
-            self.branch_table[ir](operand_a, operand_b, ir)
-            branch = ((ir & 0b11000000) >> 6) + 1
-            self.pc += branch
-                    
+            IR = self.read_ram(self.pc)
+            operand_a = self.read_ram(self.pc + 1)
+            operand_b = self.read_ram(self.pc + 2)
+            if IR == HLT:
+                print("Exiting program...")
+                sys.exit(1)
+            elif IR in jump:
+                self.branch_table[IR](operand_a, operand_b)
+            elif IR in self.branch_table:
+                self.branch_table[IR](operand_a, operand_b)
+                self.pc += (IR >> 6) + 1
+            else:
+                print(IR)
